@@ -45,7 +45,11 @@
                 if (!response.ok) {
                     throw new Error('데이터를 불러오는데 실패했습니다.');
                 }
-                const stockData = await response.json();
+                const responseData = await response.json();
+
+                // 새로운 JSON 구조 { generation_time: "...", stocks: [...] } 혹은 기존 배열 모드 대응
+                const stockData = responseData.stocks ? responseData.stocks : responseData;
+                const generationTime = responseData.generation_time ? responseData.generation_time : "업데이트 중...";
 
                 // 조건에 맞는 종목 필터링 (PER 0 초과 10 이하, PBR 0 초과 1 이하)
                 const filteredStocks = stockData.filter(stock =>
@@ -64,8 +68,12 @@
                     return;
                 }
 
-                // 테이블 헤더 위에 총 종목 수 표시를 위해 헤더 텍스트 수정
-                document.querySelector('header p').innerHTML = `PER 10 이하, PBR 1 이하 종목 리스트 <br><span class="text-sm text-green-600 font-semibold">총 ${filteredStocks.length}개의 저평가 우량주가 발견되었습니다!</span>`;
+                // 테이블 헤더 위에 총 종목 수와 데이터 기준 일시 표시
+                document.querySelector('header p').innerHTML = `
+                    <span class="text-sm text-gray-500 bg-gray-200 px-3 py-1 rounded-full mb-3 inline-block font-medium">데이터 기준 일시: ${generationTime}</span><br>
+                    PER 10 이하, PBR 1 이하 종목 리스트 <br>
+                    <span class="text-sm text-green-600 font-semibold mt-1 inline-block">총 ${filteredStocks.length}개의 저평가 우량주가 발견되었습니다!</span>
+                `;
 
                 filteredStocks.forEach((stock, index) => {
                     const formattedPrice = new Intl.NumberFormat('ko-KR').format(stock.price);

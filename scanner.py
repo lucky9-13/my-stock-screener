@@ -132,9 +132,18 @@ def save_to_json(data, filepath):
     """수집된 데이터를 JSON 파일로 저장합니다."""
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     
+    # 시간 포맷: YYYY-MM-DD HH:mm
+    current_time_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+    
+    # 데이터를 리스트 대신 딕셔너리로 감싸서 시간 정보와 함께 저장
+    output_data = {
+        "generation_time": current_time_str,
+        "stocks": data
+    }
+    
     with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    logging.info(f"데이터가 {filepath} 에 저장되었습니다. (총 {len(data)} 종목)")
+        json.dump(output_data, f, ensure_ascii=False, indent=2)
+    logging.info(f"데이터가 {filepath} 에 저장되었습니다. (총 {len(data)} 종목, 시간: {current_time_str})")
 
 def main():
     start_time = datetime.now()
