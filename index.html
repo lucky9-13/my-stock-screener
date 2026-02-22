@@ -1,18 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>내 주식 스크리너</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; }
-        h1 { color: #2c3e50; }
-        .card { border: 1px solid #ddd; padding: 20px; border-radius: 10px; display: inline-block; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 주식 가치 스크리너</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>🚀 내 주식 스크리너 준비 중!</h1>
-    <div class="card">
-        <p>PER, PBR 지표로 종목을 추천해주는 페이지입니다.</p>
-        <p>곧 데이터 연동을 시작할 예정이에요.</p>
+<body class="bg-gray-100 p-5">
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-blue-600">🚀 저평가 우량주 스크리너</h1>
+            <p class="text-gray-600">PER < 10, PBR < 1 조건을 만족하는 종목</p>
+        </header>
+
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6 flex gap-4">
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700">최대 PER</label>
+                <input type="number" value="10" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm border p-2">
+            </div>
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700">최대 PBR</label>
+                <input type="number" value="1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm border p-2">
+            </div>
+            <button class="bg-blue-500 text-white px-6 py-2 rounded-md self-end hover:bg-blue-600">검색</button>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50 text-gray-700">
+                    <tr>
+                        <th class="p-4 border-b">종목명</th>
+                        <th class="p-4 border-b">현재가</th>
+                        <th class="p-4 border-b text-red-500">PER</th>
+                        <th class="p-4 border-b text-blue-500">PBR</th>
+                        <th class="p-4 border-b">시가총액</th>
+                    </tr>
+                </thead>
+                <tbody id="stock-list">
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-4 border-b font-medium">데이터 불러오는 중...</td>
+                        <td class="p-4 border-b">-</td>
+                        <td class="p-4 border-b">-</td>
+                        <td class="p-4 border-b">-</td>
+                        <td class="p-4 border-b">-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </body>
 </html>
