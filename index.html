@@ -10,20 +10,8 @@
     <div class="max-w-4xl mx-auto">
         <header class="text-center mb-10">
             <h1 class="text-3xl font-bold text-blue-600">🚀 저평가 우량주 스크리너</h1>
-            <p class="text-gray-600">PER < 10, PBR < 1 조건을 만족하는 종목</p>
+            <p class="text-gray-600">PER 10 이하, PBR 1 이하 종목 리스트</p>
         </header>
-
-        <div class="bg-white p-6 rounded-lg shadow-md mb-6 flex gap-4">
-            <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-700">최대 PER</label>
-                <input type="number" value="10" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm border p-2">
-            </div>
-            <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-700">최대 PBR</label>
-                <input type="number" value="1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm border p-2">
-            </div>
-            <button class="bg-blue-500 text-white px-6 py-2 rounded-md self-end hover:bg-blue-600">검색</button>
-        </div>
 
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <table class="w-full text-left border-collapse">
@@ -37,16 +25,36 @@
                     </tr>
                 </thead>
                 <tbody id="stock-list">
-                    <tr class="hover:bg-gray-50">
-                        <td class="p-4 border-b font-medium">데이터 불러오는 중...</td>
-                        <td class="p-4 border-b">-</td>
-                        <td class="p-4 border-b">-</td>
-                        <td class="p-4 border-b">-</td>
-                        <td class="p-4 border-b">-</td>
-                    </tr>
-                </tbody>
+                    </tbody>
             </table>
         </div>
     </div>
+
+    <script>
+        // 여기에 나중에 진짜 주식 데이터를 연결할 거예요!
+        // 지금은 예시 데이터(Sample)를 보여줍니다.
+        const stockData = [
+            { name: "삼성전자", price: "72,000", per: "9.5", pbr: "1.2", cap: "430조" },
+            { name: "현대차", price: "240,000", per: "5.2", pbr: "0.6", cap: "50조" },
+            { name: "기아", price: "110,000", per: "4.8", pbr: "0.8", cap: "45조" },
+            { name: "한국전력", price: "20,000", per: "8.1", pbr: "0.3", cap: "12조" }
+        ];
+
+        const listContainer = document.getElementById('stock-list');
+
+        // 데이터를 화면에 그리는 마법
+        stockData.forEach(stock => {
+            const row = `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-4 border-b font-medium">${stock.name}</td>
+                    <td class="p-4 border-b">${stock.price}원</td>
+                    <td class="p-4 border-b text-red-600 font-bold">${stock.per}</td>
+                    <td class="p-4 border-b text-blue-600 font-bold">${stock.pbr}</td>
+                    <td class="p-4 border-b text-sm text-gray-500">${stock.cap}</td>
+                </tr>
+            `;
+            listContainer.innerHTML += row;
+        });
+    </script>
 </body>
 </html>
