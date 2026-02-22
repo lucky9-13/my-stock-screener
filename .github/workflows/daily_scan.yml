@@ -1,0 +1,40 @@
+name: Daily Stock Data Scanner
+
+on:
+  schedule:
+    # 매일 평일(월-금) 한국 시간 16:00 (UTC 07:00) 장 마감 후 실행
+    - cron: '0 7 * * 1-5'
+  workflow_dispatch: # 수동 실행을 위한 트리거 추가
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 봇이 커밋/푸시를 수행하기 위한 권한 부여
+
+    steps:
+      - name: 저장소 체크아웃 (Checkout Repository)
+        uses: actions/checkout@v4
+
+      - name: Python 환경 설정 (Set up Python)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' # 안정적인 호환성을 위해 3.10 사용
+          cache: 'pip'
+
+      - name: 의존성 패키지 설치 (Install dependencies)
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: 스캐너 실행 (Run Scanner Script)
+        run: python scanner.py
+
+      - name: 수집된 데이터 커밋 및 깃허브 푸시 (Commit and Push Data)
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/stock_data.json
+          
+          # 변경사항이 있는 경우에만 커밋 및 푸시
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Daily Stock Market Data (PER/PBR)" && git push)
