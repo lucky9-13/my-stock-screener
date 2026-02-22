@@ -78,7 +78,9 @@
                     const row = `
                         <tr class="${rowBg} transition-colors duration-200">
                             <td class="p-4 border-b font-medium text-gray-800">
-                                ${stock.name}
+                                <a href="https://finance.naver.com/item/main.naver?code=${stock.code}" target="_blank" class="hover:text-blue-600 hover:underline cursor-pointer" title="네이버 증권에서 보기">
+                                    ${stock.name}
+                                </a>
                                 <span class="text-xs text-gray-400 ml-1 tracking-tighter">(${stock.code})</span>
                                 ${badge}
                             </td>
