@@ -45,8 +45,9 @@
                 // 로딩 메시지 표시
                 listContainer.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">데이터를 불러오는 중입니다...</td></tr>`;
 
-                // JSON 파일 가져오기
-                const response = await fetch('data/stock_data.json');
+                // JSON 파일 가져오기 (브라우저 캐시 무시를 위해 timestamp 추가)
+                const timestamp = new Date().getTime();
+                const response = await fetch(`data/stock_data.json?t=${timestamp}`);
                 if (!response.ok) {
                     throw new Error('데이터를 불러오는데 실패했습니다.');
                 }
