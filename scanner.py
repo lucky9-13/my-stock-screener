@@ -8,6 +8,30 @@ import asyncio
 import aiohttp
 from bs4 import BeautifulSoup
 
+def map_to_core_sector(industry_name):
+    """네이버 금융 업종명을 8대 핵심 섹터로 매핑합니다."""
+    if not industry_name:
+        return '내수/유통/기타'
+        
+    industry = industry_name.replace(' ', '')
+    
+    if any(k in industry for k in ['반도체', 'IT', '컴퓨터', '소프트웨어', '전자', '디스플레이', '통신', '게임']):
+        return 'IT/반도체'
+    elif any(k in industry for k in ['제약', '바이오', '의료', '건강', '생물']):
+        return '바이오/헬스케어'
+    elif any(k in industry for k in ['자동차', '운수', '운항', '조선', '기계', '항공', '해운']):
+        return '자동차/운수장비'
+    elif any(k in industry for k in ['은행', '증권', '보험', '금융', '캐피탈', '카드']):
+        return '금융'
+    elif any(k in industry for k in ['화학', '에너지', '정유', '가스', '전기', '유틸리티', '2차전지']):
+        return '화학/에너지'
+    elif any(k in industry for k in ['철강', '금속', '비철', '소재', '목재', '종이', '시멘트']):
+        return '철강/소재'
+    elif any(k in industry for k in ['건설', '건축', '토목', '부동산', '엔지니어링']):
+        return '건설/부동산'
+    else:
+        return '내수/유통/기타'
+
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -19,7 +43,7 @@ async def fetch_naver_finance(session, code):
     try:
         async with session.get(url, headers=headers, timeout=10) as response:
             if response.status != 200:
-                return code, 0.0, 0.0
+                return code, 0.0, 0.0, 0.0, 0.0, 999.0, 0.0, "기타"
                 
             text = await response.text()
             soup = BeautifulSoup(text, 'lxml')
@@ -29,6 +53,13 @@ async def fetch_naver_finance(session, code):
             roe = 0.0
             opm = 0.0
             debt = 0.0
+            industry_name = "기타"
+            
+            upjong_a = soup.select_one('a[href*="type=upjong"]')
+            if upjong_a:
+                industry_name = upjong_a.text.strip()
+                
+            sector = map_to_core_sector(industry_name)
             
             per_em = soup.select_one('#_per')
             pbr_em = soup.select_one('#_pbr')
@@ -103,11 +134,11 @@ async def fetch_naver_finance(session, code):
                 
             total_score = round(per_score + pbr_score + roe_score + opm_score + debt_score, 2)
             
-            return code, per, pbr, roe, opm, debt, total_score
+            return code, per, pbr, roe, opm, debt, total_score, sector
 
     except Exception as e:
         # logging.debug(f"[{code}] 스크래핑 오류: {e}")
-        return code, 0.0, 0.0, 0.0, 0.0, 999.0, 0.0
+        return code, 0.0, 0.0, 0.0, 0.0, 999.0, 0.0, "기타"
 
 async def process_market(market, max_concurrent_requests=50):
     """특정 시장(KOSPI/KOSDAQ)의 종목 데이터를 비동기로 수집합니다."""
@@ -137,6 +168,7 @@ async def process_market(market, max_concurrent_requests=50):
                 "opm": 0.0,
                 "debt": 0.0,
                 "score": 0.0,
+                "sector": "기타",
                 "market_cap": round(market_cap_trillion, 2)
             })
             
@@ -164,8 +196,8 @@ async def process_market(market, max_concurrent_requests=50):
                 chunk = tasks[i:i + chunk_size]
                 chunk_results = await asyncio.gather(*chunk)
                 
-                for code, per, pbr, roe, opm, debt, score in chunk_results:
-                    results[code] = (per, pbr, roe, opm, debt, score)
+                for code, per, pbr, roe, opm, debt, score, sector in chunk_results:
+                    results[code] = (per, pbr, roe, opm, debt, score, sector)
                     
                 completed += len(chunk)
                 logging.info(f"{market} 스크래핑 진행률: {completed}/{total}")
@@ -177,7 +209,7 @@ async def process_market(market, max_concurrent_requests=50):
         for item in market_data:
             code = item['code']
             if code in results:
-                item['per'], item['pbr'], item['roe'], item['opm'], item['debt'], item['score'] = results[code]
+                item['per'], item['pbr'], item['roe'], item['opm'], item['debt'], item['score'], item['sector'] = results[code]
                 
         return market_data
 

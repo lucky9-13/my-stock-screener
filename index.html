@@ -9,43 +9,26 @@
 </head>
 
 <body class="bg-gray-100 p-5">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-6xl mx-auto">
         <header class="text-center mb-10">
-            <h1 class="text-3xl font-bold text-blue-600">🚀 저평가 우량주 스크리너</h1>
-            <p class="text-gray-600">PER 10 이하, PBR 1 이하 종목 리스트</p>
+            <h1 class="text-4xl font-extrabold text-blue-600 tracking-tight">🚀 섹터별 우량주 스크리너</h1>
+            <p class="text-gray-600 mt-4" id="header-desc">
+                데이터를 분석 중입니다...
+            </p>
         </header>
 
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-gray-50 text-gray-700">
-                    <tr>
-                        <th class="p-4 border-b w-12 text-center text-gray-500">No.</th>
-                        <th class="p-4 border-b">종목명</th>
-                        <th class="p-4 border-b text-purple-600 font-bold">총점</th>
-                        <th class="p-4 border-b">현재가</th>
-                        <th class="p-4 border-b text-red-500">PER</th>
-                        <th class="p-4 border-b text-blue-500">PBR</th>
-                        <th class="p-4 border-b">ROE</th>
-                        <th class="p-4 border-b">영업이익률</th>
-                        <th class="p-4 border-b">부채비율</th>
-                        <th class="p-4 border-b">시가총액</th>
-                    </tr>
-                </thead>
-                <tbody id="stock-list">
-                </tbody>
-            </table>
+        <div id="content-wrapper">
+            <!-- 섹터별 테이블이 이곳에 동적으로 삽입됩니다 -->
+            <div class="text-center p-10 text-gray-500">데이터를 불러오는 중입니다... 잠시만 기다려주세요.</div>
         </div>
     </div>
 
     <script>
-        const listContainer = document.getElementById('stock-list');
+        const contentWrapper = document.getElementById('content-wrapper');
 
         async function loadAndFilterStocks() {
             try {
-                // 로딩 메시지 표시
-                listContainer.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">데이터를 불러오는 중입니다...</td></tr>`;
-
-                // JSON 파일 가져오기 (브라우저 캐시 무시를 위해 timestamp 추가)
+                // JSON 파일 가져오기 (캐시 무시)
                 const timestamp = new Date().getTime();
                 const response = await fetch(`data/stock_data.json?t=${timestamp}`);
                 if (!response.ok) {
@@ -53,77 +36,115 @@
                 }
                 const responseData = await response.json();
 
-                // JSON 데이터 구조 대응
                 const stockData = responseData.stocks ? responseData.stocks : responseData;
                 const generationTime = responseData.generation_time ? responseData.generation_time : "업데이트 중...";
 
-                // 모든 주식을 대상으로 총점(Score) 기준 내림차순 정렬
-                stockData.sort((a, b) => b.score - a.score);
-
-                // 스크롤 압박을 줄이기 위해 상위 100위까지만 표출 (가성비 우량주 Top 100)
-                const topStocks = stockData.slice(0, 100);
-
-                // 화면에 렌더링
-                listContainer.innerHTML = '';
-
-                if (topStocks.length === 0) {
-                    listContainer.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-gray-500">조건에 맞는 종목이 없습니다.</td></tr>`;
-                    return;
-                }
-
-                // 테이블 헤더 위에 설명 업데이트
-                document.querySelector('header p').innerHTML = `
-                    <span class="text-sm text-gray-500 bg-gray-200 px-3 py-1 rounded-full mb-3 inline-block font-medium">데이터 기준 일시: ${generationTime}</span><br>
-                    PER, PBR, ROE, 영업이익률, 부채비율 통합 100점 만점 평가<br>
-                    <span class="text-lg text-blue-600 font-bold mt-2 inline-block">🏆 가성비 우량주 종합 랭킹 상위 100선</span>
+                // 헤더 설명 업데이트
+                document.getElementById('header-desc').innerHTML = `
+                    <span class="text-sm text-gray-500 bg-gray-200 px-3 py-1 rounded-full mb-3 inline-block font-medium shadow-sm">최근 업데이트: ${generationTime}</span><br>
+                    <span class="text-md text-gray-700">PER, PBR, ROE, 영업이익률, 부채비율 통합 100점 만점 평가</span><br>
+                    <span class="text-xl text-blue-700 font-bold mt-2 inline-block">🏆 8대 핵심 섹터별 가성비 우량주 랭킹 상위 20선</span>
                 `;
 
-                topStocks.forEach((stock, index) => {
-                    const formattedPrice = new Intl.NumberFormat('ko-KR').format(stock.price);
+                // 섹터별 그룹핑 및 렌더링
+                const sectors = ['IT/반도체', '바이오/헬스케어', '자동차/운수장비', '금융', '화학/에너지', '철강/소재', '건설/부동산', '내수/유통/기타'];
+                let htmlContent = '';
 
-                    // 상위 3위, 10위 등 강조 뱃지
-                    let badge = "";
-                    let rowBg = "hover:bg-gray-50";
+                sectors.forEach(sector => {
+                    // 해당 섹터 종목 추출 및 점수별 내림차순 정렬
+                    const sectorStocks = stockData
+                        .filter(s => s.sector === sector)
+                        .sort((a, b) => b.score - a.score);
 
-                    if (index < 3) {
-                        badge = `<span class="ml-2 px-2 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-sm">🏆 Top ${index + 1}</span>`;
-                        rowBg = "bg-yellow-50 hover:bg-yellow-100";
-                    } else if (index < 10) {
-                        badge = `<span class="ml-2 px-2 py-1 bg-red-400 text-white text-xs font-bold rounded-full shadow-sm">Top ${index + 1}</span>`;
-                    }
+                    if (sectorStocks.length === 0) return;
 
-                    const debtDisplay = stock.debt === 999.0 || stock.debt === "N/A" ? "N/A (위험)" : stock.debt.toFixed(2) + "%";
+                    const topStock = sectorStocks[0];
+                    const top20Stocks = sectorStocks.slice(0, 20); // 상위 20개 추출
 
-                    const row = `
-                        <tr class="${rowBg} transition-colors duration-200">
-                            <td class="p-4 border-b text-center font-bold text-gray-500">${index + 1}</td>
-                            <td class="p-4 border-b font-medium text-gray-800">
-                                <a href="https://finance.naver.com/item/main.naver?code=${stock.code}" target="_blank" class="hover:text-blue-600 hover:underline cursor-pointer" title="네이버 증권에서 보기">
-                                    ${stock.name}
+                    htmlContent += `
+                        <div class="mt-12 mb-4 flex flex-col md:flex-row justify-between items-end gap-4">
+                            <h2 class="text-2xl font-extrabold text-blue-900 border-l-4 border-blue-600 pl-3">${sector} 상위 20선</h2>
+                            <div class="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-lg shadow-sm">
+                                <span class="text-yellow-600 font-bold mr-1">🏆 1위:</span>
+                                <a href="https://finance.naver.com/item/main.naver?code=${topStock.code}" target="_blank" class="font-bold text-lg hover:text-blue-600 hover:underline cursor-pointer text-gray-800 tracking-tight">
+                                    ${topStock.name}
                                 </a>
-                                <span class="text-xs px-2 py-0.5 ml-1 rounded-md ${stock.market === 'KOSPI' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">${stock.market}</span>
-                                ${badge}
-                                <br><span class="text-xs text-gray-400 tracking-tighter">(${stock.code})</span>
-                            </td>
-                            <td class="p-4 border-b">
-                                <span class="text-xl text-purple-700 font-extrabold">${stock.score.toFixed(2)}</span>
-                                <span class="text-xs text-gray-500 ml-1">점</span>
-                            </td>
-                            <td class="p-4 border-b text-gray-700 font-semibold">${formattedPrice}원</td>
-                            <td class="p-4 border-b text-red-600 font-semibold">${stock.per.toFixed(2)}</td>
-                            <td class="p-4 border-b text-blue-600 font-semibold">${stock.pbr.toFixed(2)}</td>
-                            <td class="p-4 border-b text-gray-700">${stock.roe.toFixed(2)}%</td>
-                            <td class="p-4 border-b text-gray-700">${stock.opm.toFixed(2)}%</td>
-                            <td class="p-4 border-b text-gray-700">${debtDisplay}</td>
-                            <td class="p-4 border-b text-sm text-gray-500">${stock.market_cap.toFixed(1)}조</td>
-                        </tr>
+                                <span class="text-sm font-bold text-purple-600 ml-2">(${topStock.score.toFixed(2)}점)</span>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow-md overflow-x-auto">
+                            <table class="w-full text-left border-collapse min-w-[800px]">
+                                <thead class="bg-gray-50 text-gray-700 border-b-2 border-gray-200">
+                                    <tr>
+                                        <th class="p-3 border-b w-12 text-center text-gray-500 font-semibold">순위</th>
+                                        <th class="p-3 border-b font-semibold">종목명</th>
+                                        <th class="p-3 border-b text-purple-600 font-extrabold">총점</th>
+                                        <th class="p-3 border-b font-semibold">현재가</th>
+                                        <th class="p-3 border-b text-red-500 font-semibold">PER</th>
+                                        <th class="p-3 border-b text-blue-500 font-semibold">PBR</th>
+                                        <th class="p-3 border-b font-semibold">ROE</th>
+                                        <th class="p-3 border-b font-semibold">영업이익률</th>
+                                        <th class="p-3 border-b font-semibold">부채비율</th>
+                                        <th class="p-3 border-b font-semibold">시가총액</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                     `;
-                    listContainer.innerHTML += row;
+
+                    top20Stocks.forEach((stock, index) => {
+                        const formattedPrice = new Intl.NumberFormat('ko-KR').format(stock.price);
+
+                        let badge = "";
+                        let rowBg = "hover:bg-gray-50";
+                        if (index === 0) {
+                            badge = `<span class="ml-2 px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-sm">1위</span>`;
+                            rowBg = "bg-yellow-50 hover:bg-yellow-100";
+                        } else if (index < 3) {
+                            rowBg = "bg-gray-50 hover:bg-gray-100";
+                        }
+
+                        const debtDisplay = stock.debt === 999.0 || stock.debt === "N/A" ? "N/A" : stock.debt.toFixed(2) + "%";
+
+                        htmlContent += `
+                            <tr class="${rowBg} transition-colors duration-200 border-b border-gray-100 last:border-0">
+                                <td class="p-3 text-center font-bold text-gray-500">${index + 1}</td>
+                                <td class="p-3 font-medium text-gray-800">
+                                    <a href="https://finance.naver.com/item/main.naver?code=${stock.code}" target="_blank" class="hover:text-blue-600 hover:underline cursor-pointer" title="네이버 증권에서 보기">
+                                        ${stock.name}
+                                    </a>
+                                    ${badge}
+                                    <br><span class="text-xs text-gray-400 tracking-tighter">(${stock.code})</span>
+                                </td>
+                                <td class="p-3">
+                                    <span class="text-lg text-purple-700 font-bold">${stock.score.toFixed(2)}</span>
+                                </td>
+                                <td class="p-3 text-gray-700 font-semibold">${formattedPrice}원</td>
+                                <td class="p-3 text-red-600 font-medium">${stock.per.toFixed(2)}</td>
+                                <td class="p-3 text-blue-600 font-medium">${stock.pbr.toFixed(2)}</td>
+                                <td class="p-3 text-gray-700">${stock.roe.toFixed(2)}%</td>
+                                <td class="p-3 text-gray-700">${stock.opm.toFixed(2)}%</td>
+                                <td class="p-3 text-gray-500 text-sm">${debtDisplay}</td>
+                                <td class="p-3 text-sm text-gray-500">${stock.market_cap.toFixed(1)}조</td>
+                            </tr>
+                        `;
+                    });
+
+                    htmlContent += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
                 });
+
+                if (htmlContent === '') {
+                    htmlContent = `<div class="text-center p-10 text-gray-500">조건에 맞는 종목이 없습니다.</div>`;
+                }
+
+                contentWrapper.innerHTML = htmlContent;
 
             } catch (error) {
                 console.error('Error fetching stock data:', error);
-                listContainer.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500">데이터를 불러오는 중 에러가 발생했습니다. 나중에 다시 시도해주세요.</td></tr>`;
+                contentWrapper.innerHTML = `<div class="p-10 text-center text-red-500 font-bold">데이터를 불러오는 중 오류가 발생했습니다.<br>새로고침을 시도해주세요.</div>`;
             }
         }
 
