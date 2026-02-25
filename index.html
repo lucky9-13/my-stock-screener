@@ -72,7 +72,7 @@
 
             // 탭 스타일 업데이트
             document.querySelectorAll('.market-tab').forEach(tab => {
-                if (tab.id === \`tab-\${market}\`) {
+                if (tab.id === `tab-${market}`) {
                     tab.className = "market-tab px-6 py-2 rounded-full font-bold text-sm bg-blue-600 text-white shadow-md transition-colors";
                 } else {
                     tab.className = "market-tab px-6 py-2 rounded-full font-bold text-sm bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors";
@@ -90,45 +90,45 @@
             const sectors = ['IT/반도체', '바이오/헬스케어', '자동차/운수장비', '금융', '화학/에너지', '철강/소재', '건설/부동산', '내수/유통/기타'];
             let htmlContent = '';
 
-                // 1. 최상단 섹터별 1위 그리드 생성
-                let top1Html = '<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">';
-                sectors.forEach(sector => {
-                    const sectorStocks = filteredData
-                        .filter(s => s.sector === sector)
-                        .sort((a, b) => b.score - a.score);
+            // 1. 최상단 섹터별 1위 그리드 생성
+            let top1Html = '<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">';
+            sectors.forEach(sector => {
+                const sectorStocks = filteredData
+                    .filter(s => s.sector === sector)
+                    .sort((a, b) => b.score - a.score);
 
-                    if (sectorStocks.length > 0) {
-                        const ts = sectorStocks[0];
-                        top1Html += `
-                    < a href = "https://finance.naver.com/item/main.naver?code=${ts.code}" target = "_blank" class="flex flex-col items-center justify-center p-4 bg-white border border-blue-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-400 transition-all text-center" >
+                if (sectorStocks.length > 0) {
+                    const ts = sectorStocks[0];
+                    top1Html += `
+                            <a href="https://finance.naver.com/item/main.naver?code=${ts.code}" target="_blank" class="flex flex-col items-center justify-center p-4 bg-white border border-blue-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-400 transition-all text-center">
                                 <span class="text-xs font-bold text-gray-500 mb-1">${sector}</span>
                                 <span class="text-lg font-extrabold text-blue-900">${ts.name}</span>
                                 <div class="mt-1 flex items-center justify-center space-x-1">
                                     <span class="text-[10px] px-1.5 py-0.5 rounded-sm ${ts.market === 'KOSPI' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">${ts.market}</span>
                                     <span class="text-sm font-bold text-purple-600">🏆 ${ts.score.toFixed(2)}점</span>
                                 </div>
-                            </a >
-                    `;
-                    }
-                });
-                top1Html += '</div>';
-                htmlContent += top1Html;
+                            </a>
+                        `;
+                }
+            });
+            top1Html += '</div>';
+            htmlContent += top1Html;
 
-                sectors.forEach(sector => {
-                    // 해당 섹터 종목 추출 및 점수별 내림차순 정렬
-                    const sectorStocks = filteredData
-                        .filter(s => s.sector === sector)
-                        .sort((a, b) => b.score - a.score);
+            sectors.forEach(sector => {
+                // 해당 섹터 종목 추출 및 점수별 내림차순 정렬
+                const sectorStocks = filteredData
+                    .filter(s => s.sector === sector)
+                    .sort((a, b) => b.score - a.score);
 
-                    if (sectorStocks.length === 0) return;
+                if (sectorStocks.length === 0) return;
 
-                    const topStock = sectorStocks[0];
-                    const top20Stocks = sectorStocks.slice(0, 20); // 상위 20개 추출
+                const topStock = sectorStocks[0];
+                const top20Stocks = sectorStocks.slice(0, 20); // 상위 20개 추출
 
-                    htmlContent += `
-                    < div class="mt-8 mb-4" >
-                        <h2 class="text-2xl font-extrabold text-blue-900 border-l-4 border-blue-600 pl-3">${sector} 상위 20선</h2>
-                        </div >
+                htmlContent += `
+                        <div class="mt-8 mb-4">
+                            <h2 class="text-2xl font-extrabold text-blue-900 border-l-4 border-blue-600 pl-3">${sector} 상위 20선</h2>
+                        </div>
                     <div class="bg-white rounded-lg shadow-md overflow-x-auto">
                         <table class="w-full text-left border-collapse min-w-[800px]">
                             <thead class="bg-gray-50 text-gray-700 border-b-2 border-gray-200">
@@ -148,21 +148,21 @@
                             <tbody>
                                 `;
 
-                    top20Stocks.forEach((stock, index) => {
-                        const formattedPrice = new Intl.NumberFormat('ko-KR').format(stock.price);
+                top20Stocks.forEach((stock, index) => {
+                    const formattedPrice = new Intl.NumberFormat('ko-KR').format(stock.price);
 
-                                let badge = "";
-                                let rowBg = "hover:bg-gray-50";
-                                if (index === 0) {
-                                    badge = `<span class="ml-2 px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-sm">1위</span>`;
-                                rowBg = "bg-yellow-50 hover:bg-yellow-100";
-                        } else if (index < 3) {
-                                    rowBg = "bg-gray-50 hover:bg-gray-100";
-                        }
+                    let badge = "";
+                    let rowBg = "hover:bg-gray-50";
+                    if (index === 0) {
+                        badge = `<span class="ml-2 px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-sm">1위</span>`;
+                        rowBg = "bg-yellow-50 hover:bg-yellow-100";
+                    } else if (index < 3) {
+                        rowBg = "bg-gray-50 hover:bg-gray-100";
+                    }
 
-                                const debtDisplay = stock.debt === 999.0 || stock.debt === "N/A" ? "N/A" : stock.debt.toFixed(2) + "%";
+                    const debtDisplay = stock.debt === 999.0 || stock.debt === "N/A" ? "N/A" : stock.debt.toFixed(2) + "%";
 
-                                htmlContent += `
+                    htmlContent += `
                                 <tr class="${rowBg} transition-colors duration-200 border-b border-gray-100 last:border-0">
                                     <td class="p-3 text-center font-bold text-gray-500">${index + 1}</td>
                                     <td class="p-3 font-medium text-gray-800">
@@ -185,20 +185,20 @@
                                     <td class="p-3 text-sm text-gray-500">${stock.market_cap.toFixed(1)}조</td>
                                 </tr>
                                 `;
-                    });
+                });
 
-                                htmlContent += `
+                htmlContent += `
                             </tbody>
                         </table>
                     </div>
                 `;
-                });
+            });
 
-                if (htmlContent === top1Html) {
-                    htmlContent += `< div class="text-center p-10 text-gray-500" > 해당 시장 조건에 맞는 종목이 없습니다.</div >`;
-                }
+            if (htmlContent === top1Html) {
+                htmlContent += `<div class="text-center p-10 text-gray-500">해당 시장 조건에 맞는 종목이 없습니다.</div>`;
+            }
 
-                contentWrapper.innerHTML = htmlContent;
+            contentWrapper.innerHTML = htmlContent;
         }
 
         // 페이지 로드 시 실행
