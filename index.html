@@ -21,9 +21,13 @@
                     <tr>
                         <th class="p-4 border-b w-12 text-center text-gray-500">No.</th>
                         <th class="p-4 border-b">종목명</th>
+                        <th class="p-4 border-b text-purple-600 font-bold">총점</th>
                         <th class="p-4 border-b">현재가</th>
                         <th class="p-4 border-b text-red-500">PER</th>
                         <th class="p-4 border-b text-blue-500">PBR</th>
+                        <th class="p-4 border-b">ROE</th>
+                        <th class="p-4 border-b">영업이익률</th>
+                        <th class="p-4 border-b">부채비율</th>
                         <th class="p-4 border-b">시가총액</th>
                     </tr>
                 </thead>
@@ -48,41 +52,46 @@
                 }
                 const responseData = await response.json();
 
-                // 새로운 JSON 구조 { generation_time: "...", stocks: [...] } 혹은 기존 배열 모드 대응
+                // JSON 데이터 구조 대응
                 const stockData = responseData.stocks ? responseData.stocks : responseData;
                 const generationTime = responseData.generation_time ? responseData.generation_time : "업데이트 중...";
 
-                // 조건에 맞는 종목 필터링 (PER 0 초과 10 이하, PBR 0 초과 1 이하)
-                const filteredStocks = stockData.filter(stock =>
-                    stock.per > 0 && stock.per <= 10 &&
-                    stock.pbr > 0 && stock.pbr <= 1
-                );
+                // 모든 주식을 대상으로 총점(Score) 기준 내림차순 정렬
+                stockData.sort((a, b) => b.score - a.score);
 
-                // PER 기준으로 오름차순 정렬 (가장 저평가된 종목이 위로 오도록)
-                filteredStocks.sort((a, b) => a.per - b.per);
+                // 스크롤 압박을 줄이기 위해 상위 100위까지만 표출 (가성비 우량주 Top 100)
+                const topStocks = stockData.slice(0, 100);
 
                 // 화면에 렌더링
                 listContainer.innerHTML = '';
 
-                if (filteredStocks.length === 0) {
-                    listContainer.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">조건에 맞는 종목이 없습니다.</td></tr>`;
+                if (topStocks.length === 0) {
+                    listContainer.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-gray-500">조건에 맞는 종목이 없습니다.</td></tr>`;
                     return;
                 }
 
-                // 테이블 헤더 위에 총 종목 수와 데이터 기준 일시 표시
+                // 테이블 헤더 위에 설명 업데이트
                 document.querySelector('header p').innerHTML = `
                     <span class="text-sm text-gray-500 bg-gray-200 px-3 py-1 rounded-full mb-3 inline-block font-medium">데이터 기준 일시: ${generationTime}</span><br>
-                    PER 10 이하, PBR 1 이하 종목 리스트 <br>
-                    <span class="text-sm text-green-600 font-semibold mt-1 inline-block">총 ${filteredStocks.length}개의 저평가 우량주가 발견되었습니다!</span>
+                    PER, PBR, ROE, 영업이익률, 부채비율 통합 100점 만점 평가<br>
+                    <span class="text-lg text-blue-600 font-bold mt-2 inline-block">🏆 가성비 우량주 종합 랭킹 상위 100선</span>
                 `;
 
-                filteredStocks.forEach((stock, index) => {
+                topStocks.forEach((stock, index) => {
                     const formattedPrice = new Intl.NumberFormat('ko-KR').format(stock.price);
 
-                    // 상위 10개 종목은 특별히 배경색과 뱃지로 "강조" 처리
-                    const isTop10 = index < 10;
-                    const rowBg = isTop10 ? "bg-yellow-50 hover:bg-yellow-100" : "hover:bg-gray-50";
-                    const badge = isTop10 ? `<span class="ml-2 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-sm">Top ${index + 1}</span>` : "";
+                    // 상위 3위, 10위 등 강조 뱃지
+                    let badge = "";
+                    let rowBg = "hover:bg-gray-50";
+
+                    if (index < 3) {
+                        badge = `<span class="ml-2 px-2 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-sm">🏆 Top ${index + 1}</span>`;
+                        rowBg = "bg-yellow-50 hover:bg-yellow-100";
+                    } else if (index < 10) {
+                        badge = `<span class="ml-2 px-2 py-1 bg-red-400 text-white text-xs font-bold rounded-full shadow-sm">Top ${index + 1}</span>`;
+                    }
+
+                    const debtDisplay = stock.debt === 999.0 || stock.debt === "N/A" ? "N/A (위험)" : stock.debt.toFixed(2) + "%";
 
                     const row = `
                         <tr class="${rowBg} transition-colors duration-200">
@@ -91,14 +100,21 @@
                                 <a href="https://finance.naver.com/item/main.naver?code=${stock.code}" target="_blank" class="hover:text-blue-600 hover:underline cursor-pointer" title="네이버 증권에서 보기">
                                     ${stock.name}
                                 </a>
-                                <span class="text-xs text-gray-400 ml-1 tracking-tighter">(${stock.code})</span>
                                 <span class="text-xs px-2 py-0.5 ml-1 rounded-md ${stock.market === 'KOSPI' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">${stock.market}</span>
                                 ${badge}
+                                <br><span class="text-xs text-gray-400 tracking-tighter">(${stock.code})</span>
+                            </td>
+                            <td class="p-4 border-b">
+                                <span class="text-xl text-purple-700 font-extrabold">${stock.score.toFixed(2)}</span>
+                                <span class="text-xs text-gray-500 ml-1">점</span>
                             </td>
                             <td class="p-4 border-b text-gray-700 font-semibold">${formattedPrice}원</td>
-                            <td class="p-4 border-b text-red-600 font-extrabold">${stock.per.toFixed(2)}</td>
-                            <td class="p-4 border-b text-blue-600 font-extrabold">${stock.pbr.toFixed(2)}</td>
-                            <td class="p-4 border-b text-sm text-gray-600">${stock.market_cap.toFixed(2)}조</td>
+                            <td class="p-4 border-b text-red-600 font-semibold">${stock.per.toFixed(2)}</td>
+                            <td class="p-4 border-b text-blue-600 font-semibold">${stock.pbr.toFixed(2)}</td>
+                            <td class="p-4 border-b text-gray-700">${stock.roe.toFixed(2)}%</td>
+                            <td class="p-4 border-b text-gray-700">${stock.opm.toFixed(2)}%</td>
+                            <td class="p-4 border-b text-gray-700">${debtDisplay}</td>
+                            <td class="p-4 border-b text-sm text-gray-500">${stock.market_cap.toFixed(1)}조</td>
                         </tr>
                     `;
                     listContainer.innerHTML += row;

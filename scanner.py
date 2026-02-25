@@ -26,6 +26,9 @@ async def fetch_naver_finance(session, code):
             
             per = 0.0
             pbr = 0.0
+            roe = 0.0
+            opm = 0.0
+            debt = 0.0
             
             per_em = soup.select_one('#_per')
             pbr_em = soup.select_one('#_pbr')
@@ -41,12 +44,70 @@ async def fetch_naver_finance(session, code):
                     pbr = float(pbr_em.text.replace(',', '').strip())
                 except ValueError:
                     pass
+            
+            table = soup.select_one('table.tb_type1.tb_num.tb_type1_ifrs')
+            if table:
+                rows = table.select('tbody tr')
+                for row in rows:
+                    th = row.select_one('th')
+                    if not th: continue
+                    title = th.text.strip()
                     
-            return code, per, pbr
+                    tds = row.select('td')
+                    val_str = '0'
+                    # Find the latest annual/quarterly non-empty value
+                    for td in reversed(tds[0:4]):
+                        text = td.text.strip().replace(',', '')
+                        if text and text not in ['-', 'N/A']:
+                            val_str = text
+                            break
+                            
+                    try:
+                        val = float(val_str) if val_str not in ['N/A', '-', '', '완전잠식'] else 0.0
+                    except:
+                        val = 0.0
+                            
+                    if '영업이익률' in title:
+                        opm = val
+                    elif 'ROE' in title:
+                        roe = val
+                    elif '부채비율' in title:
+                        if '완전잠식' in val_str:
+                            debt = 999.0
+                        else:
+                            debt_val = val
+                            if debt_val == 0.0 and val_str not in ['0', '0.0']:
+                                debt = 999.0
+                            else:
+                                debt = debt_val
+            else:
+                debt = 999.0
+
+            if debt == 0.0:
+                 debt = 999.0
+                 
+            # PER Score (PER 5 이하면 만점, 25 이상이면 0점, 음수/0은 0점)
+            per_score = 0.0 if per <= 0 else max(0.0, min(20.0, (25 - per) / 20 * 20))
+                
+            # PBR Score (PBR 0.5 이하면 만점, 2.5 이상이면 0점, 음수/0은 0점)
+            pbr_score = 0.0 if pbr <= 0 else max(0.0, min(20.0, (2.5 - pbr) / 2 * 20))
+                
+            # ROE Score (ROE 20% 이상 만점, 0% 이하 0점)
+            roe_score = max(0.0, min(20.0, roe / 20 * 20))
+            
+            # OPM Score (영업이익률 20% 이상 만점, 0% 이하 0점)
+            opm_score = max(0.0, min(20.0, opm / 20 * 20))
+            
+            # Debt Score (부채비율 50% 이하 만점, 250% 이상 0점)
+            debt_score = 0.0 if debt >= 250 or debt == 999.0 else max(0.0, min(20.0, (250 - debt) / 200 * 20))
+                
+            total_score = round(per_score + pbr_score + roe_score + opm_score + debt_score, 2)
+            
+            return code, per, pbr, roe, opm, debt, total_score
 
     except Exception as e:
         # logging.debug(f"[{code}] 스크래핑 오류: {e}")
-        return code, 0.0, 0.0
+        return code, 0.0, 0.0, 0.0, 0.0, 999.0, 0.0
 
 async def process_market(market, max_concurrent_requests=50):
     """특정 시장(KOSPI/KOSDAQ)의 종목 데이터를 비동기로 수집합니다."""
@@ -72,6 +133,10 @@ async def process_market(market, max_concurrent_requests=50):
                 "price": price,
                 "per": 0.0, # 나중에 채움
                 "pbr": 0.0, # 나중에 채움
+                "roe": 0.0,
+                "opm": 0.0,
+                "debt": 0.0,
+                "score": 0.0,
                 "market_cap": round(market_cap_trillion, 2)
             })
             
@@ -99,8 +164,8 @@ async def process_market(market, max_concurrent_requests=50):
                 chunk = tasks[i:i + chunk_size]
                 chunk_results = await asyncio.gather(*chunk)
                 
-                for code, per, pbr in chunk_results:
-                    results[code] = (per, pbr)
+                for code, per, pbr, roe, opm, debt, score in chunk_results:
+                    results[code] = (per, pbr, roe, opm, debt, score)
                     
                 completed += len(chunk)
                 logging.info(f"{market} 스크래핑 진행률: {completed}/{total}")
@@ -112,7 +177,7 @@ async def process_market(market, max_concurrent_requests=50):
         for item in market_data:
             code = item['code']
             if code in results:
-                item['per'], item['pbr'] = results[code]
+                item['per'], item['pbr'], item['roe'], item['opm'], item['debt'], item['score'] = results[code]
                 
         return market_data
 
