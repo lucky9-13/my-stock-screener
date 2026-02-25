@@ -19,6 +19,7 @@
             <table class="w-full text-left border-collapse">
                 <thead class="bg-gray-50 text-gray-700">
                     <tr>
+                        <th class="p-4 border-b w-12 text-center text-gray-500">No.</th>
                         <th class="p-4 border-b">종목명</th>
                         <th class="p-4 border-b">현재가</th>
                         <th class="p-4 border-b text-red-500">PER</th>
@@ -38,7 +39,7 @@
         async function loadAndFilterStocks() {
             try {
                 // 로딩 메시지 표시
-                listContainer.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">데이터를 불러오는 중입니다...</td></tr>`;
+                listContainer.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">데이터를 불러오는 중입니다...</td></tr>`;
 
                 // JSON 파일 가져오기
                 const response = await fetch('data/stock_data.json');
@@ -64,7 +65,7 @@
                 listContainer.innerHTML = '';
 
                 if (filteredStocks.length === 0) {
-                    listContainer.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">조건에 맞는 종목이 없습니다.</td></tr>`;
+                    listContainer.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">조건에 맞는 종목이 없습니다.</td></tr>`;
                     return;
                 }
 
@@ -85,11 +86,13 @@
 
                     const row = `
                         <tr class="${rowBg} transition-colors duration-200">
+                            <td class="p-4 border-b text-center font-bold text-gray-500">${index + 1}</td>
                             <td class="p-4 border-b font-medium text-gray-800">
                                 <a href="https://finance.naver.com/item/main.naver?code=${stock.code}" target="_blank" class="hover:text-blue-600 hover:underline cursor-pointer" title="네이버 증권에서 보기">
                                     ${stock.name}
                                 </a>
                                 <span class="text-xs text-gray-400 ml-1 tracking-tighter">(${stock.code})</span>
+                                <span class="text-xs px-2 py-0.5 ml-1 rounded-md ${stock.market === 'KOSPI' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">${stock.market}</span>
                                 ${badge}
                             </td>
                             <td class="p-4 border-b text-gray-700 font-semibold">${formattedPrice}원</td>
@@ -103,7 +106,7 @@
 
             } catch (error) {
                 console.error('Error fetching stock data:', error);
-                listContainer.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500">데이터를 불러오는 중 에러가 발생했습니다. 나중에 다시 시도해주세요.</td></tr>`;
+                listContainer.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500">데이터를 불러오는 중 에러가 발생했습니다. 나중에 다시 시도해주세요.</td></tr>`;
             }
         }
 
